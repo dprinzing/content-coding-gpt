@@ -36,6 +36,7 @@ func main() {
 
 	// Initialize the commands:
 	initModelCmd(rootCmd)
+	initFileCmd(rootCmd)
 
 	// Execute the specified command:
 	if err := rootCmd.Execute(); err != nil {

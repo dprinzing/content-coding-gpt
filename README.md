@@ -22,7 +22,9 @@ This project demonstrates the use the OpenAI API for content-coding in psycholog
 make tools
 ```
 
-* Configure the following environment variables for your OpenAI account:
+* Configure the following environment variables for your OpenAI account. For
+  simplicity, you could put them in your `.bashrc`, `.zshrc`, or equivalent.
+  Substitute the placeholders below with your own values, of course.
 
 ```bash
 export OPENAI_API_KEY="sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
@@ -33,4 +35,16 @@ export OPENAI_ORG_ID="org-xxxxxxxxxxxxxxxxxxxxxxxx"
 
 ```bash
 make build
+```
+
+## Run the Command-line Application
+
+You can explore the available commands, subcommands, and optional flags using
+the `-h` or `--help` flags. For example:
+
+```bash
+./gpt -h
+./gpt model -h
+./gpt model list -h
+./gpt model read -h
 ```

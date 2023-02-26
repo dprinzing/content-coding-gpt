@@ -12,16 +12,16 @@ type Model struct {
 	Created int64 `json:"created"`
 
 	// OwnedBy is the owner of the model, e.g. "openai-internal".
-	OwnedBy string `json:"owned_by"`
+	OwnedBy string `json:"owned_by,omitempty"`
 
 	// Permissions are the model permissions. There is typically one permission.
 	Permissions []Permission `json:"permission"`
 
 	// Root is the base model ID, e.g. "text-davinci-003".
-	Root string `json:"root"`
+	Root string `json:"root,omitempty"`
 
 	// Parent is the parent model ID, e.g. null.
-	Parent string `json:"parent"`
+	Parent string `json:"parent,omitempty"`
 }
 
 // Permission indicates how and by whom an OpenAPI Model may be used.
@@ -57,7 +57,7 @@ type Permission struct {
 	Organization string `json:"organization"`
 
 	// Group? Not sure. Example: null.
-	Group interface{} `json:"group"`
+	Group interface{} `json:"group,omitempty"`
 
 	// IsBlocking indicates whether the model is blocking. Example: false.
 	IsBlocking bool `json:"is_blocking"`
