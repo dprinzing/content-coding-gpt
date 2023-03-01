@@ -129,27 +129,27 @@ func (c *Client) ListModels(ctx context.Context) ([]Model, error) {
 }
 
 // ReadModelRaw reads the details of the specified model. It returns the raw JSON response.
-func (c *Client) ReadModelRaw(ctx context.Context, modelID string) ([]byte, error) {
-	req, err := c.getRequest(ctx, "/models/"+modelID)
+func (c *Client) ReadModelRaw(ctx context.Context, id string) ([]byte, error) {
+	req, err := c.getRequest(ctx, "/models/"+id)
 	if err != nil {
-		return nil, fmt.Errorf("read model %s: %w", modelID, err)
+		return nil, fmt.Errorf("read model %s: %w", id, err)
 	}
 	body, err := c.sendRequest(req)
 	if err != nil {
-		return nil, fmt.Errorf("read model %s: %w", modelID, err)
+		return nil, fmt.Errorf("read model %s: %w", id, err)
 	}
 	return body, nil
 }
 
 // ReadModel reads the details of the specified model.
-func (c *Client) ReadModel(ctx context.Context, modelID string) (Model, error) {
+func (c *Client) ReadModel(ctx context.Context, id string) (Model, error) {
 	var model Model
-	body, err := c.ReadModelRaw(ctx, modelID)
+	body, err := c.ReadModelRaw(ctx, id)
 	if err != nil {
 		return model, err
 	}
 	if err := json.Unmarshal(body, &model); err != nil {
-		return model, fmt.Errorf("read model %s: error unmarshaling response: %w", modelID, err)
+		return model, fmt.Errorf("read model %s: error unmarshaling response: %w", id, err)
 	}
 	return model, nil
 }
@@ -235,54 +235,205 @@ func (c *Client) ListFiles(ctx context.Context) ([]File, error) {
 }
 
 // ReadFileRaw reads the metatdata detail of the specified file. It returns the raw JSON response.
-func (c *Client) ReadFileRaw(ctx context.Context, fileID string) ([]byte, error) {
-	req, err := c.getRequest(ctx, "/files/"+fileID)
+func (c *Client) ReadFileRaw(ctx context.Context, id string) ([]byte, error) {
+	req, err := c.getRequest(ctx, "/files/"+id)
 	if err != nil {
-		return nil, fmt.Errorf("read file %s: %w", fileID, err)
+		return nil, fmt.Errorf("read file %s: %w", id, err)
 	}
 	body, err := c.sendRequest(req)
 	if err != nil {
-		return nil, fmt.Errorf("read file %s: %w", fileID, err)
+		return nil, fmt.Errorf("read file %s: %w", id, err)
 	}
 	return body, nil
 }
 
 // ReadFile reads the metadata detail of the specified file.
-func (c *Client) ReadFile(ctx context.Context, fileID string) (File, error) {
+func (c *Client) ReadFile(ctx context.Context, id string) (File, error) {
 	var file File
-	body, err := c.ReadFileRaw(ctx, fileID)
+	body, err := c.ReadFileRaw(ctx, id)
 	if err != nil {
 		return file, err
 	}
 	if err := json.Unmarshal(body, &file); err != nil {
-		return file, fmt.Errorf("read file %s: error unmarshaling response: %w", fileID, err)
+		return file, fmt.Errorf("read file %s: error unmarshaling response: %w", id, err)
 	}
 	return file, nil
 }
 
 // DownloadFile reads the contents of the specified file.
-func (c *Client) DownloadFile(ctx context.Context, fileID string) ([]byte, error) {
-	req, err := c.getRequest(ctx, "/files/"+fileID+"/content")
+func (c *Client) DownloadFile(ctx context.Context, id string) ([]byte, error) {
+	req, err := c.getRequest(ctx, "/files/"+id+"/content")
 	if err != nil {
-		return nil, fmt.Errorf("download file %s: %w", fileID, err)
+		return nil, fmt.Errorf("download file %s: %w", id, err)
 	}
 	body, err := c.sendRequest(req)
 	if err != nil {
-		return nil, fmt.Errorf("download file %s: %w", fileID, err)
+		return nil, fmt.Errorf("download file %s: %w", id, err)
 	}
 	return body, nil
 }
 
 // DeleteFile deletes the specified file.
-func (c *Client) DeleteFile(ctx context.Context, fileID string) error {
-	req, err := c.getRequest(ctx, "/files/"+fileID)
+func (c *Client) DeleteFile(ctx context.Context, id string) error {
+	req, err := c.getRequest(ctx, "/files/"+id)
 	if err != nil {
-		return fmt.Errorf("delete file %s: %w", fileID, err)
+		return fmt.Errorf("delete file %s: %w", id, err)
 	}
 	req.Method = http.MethodDelete
 	_, err = c.sendRequest(req)
 	if err != nil {
-		return fmt.Errorf("delete file %s: %w", fileID, err)
+		return fmt.Errorf("delete file %s: %w", id, err)
+	}
+	return nil
+}
+
+// CreateFineTuneRaw creates a new fine-tuned model. It returns the raw JSON response.
+func (c *Client) CreateFineTuneRaw(ctx context.Context, req FineTuneRequest) ([]byte, error) {
+	body, err := json.Marshal(req)
+	if err != nil {
+		return nil, fmt.Errorf("create fine-tune: %w", err)
+	}
+	httpReq, err := c.postRequest(ctx, "/fine-tunes", bytes.NewReader(body))
+	if err != nil {
+		return nil, fmt.Errorf("create fine-tune: %w", err)
+	}
+	raw, err := c.sendRequest(httpReq)
+	if err != nil {
+		return nil, fmt.Errorf("create fine-tune: %w", err)
+	}
+	return raw, nil
+}
+
+// CreateFineTune creates a new fine-tuned model. At a minimum, we should provide
+// the base model ID, the training file ID, and a suffix for the new model name.
+func (c *Client) CreateFineTune(ctx context.Context, req FineTuneRequest) (FineTune, error) {
+	var fineTune FineTune
+	body, err := c.CreateFineTuneRaw(ctx, req)
+	if err != nil {
+		return fineTune, err
+	}
+	if err := json.Unmarshal(body, &fineTune); err != nil {
+		return fineTune, fmt.Errorf("create fine-tune: error unmarshaling response: %w", err)
+	}
+	return fineTune, nil
+}
+
+// ListFineTunesRaw lists the currently available fine-tuning jobs, and provides basic information
+// about each one, including job status events. It returns the raw JSON response.
+func (c *Client) ListFineTunesRaw(ctx context.Context) ([]byte, error) {
+	req, err := c.getRequest(ctx, "/fine-tunes")
+	if err != nil {
+		return nil, fmt.Errorf("list fine-tunes: %w", err)
+	}
+	body, err := c.sendRequest(req)
+	if err != nil {
+		return nil, fmt.Errorf("list fine-tunes: %w", err)
+	}
+	return body, nil
+}
+
+// ListFineTunes lists the currently available fine-tuning jobs, and provides basic information
+// about each one, including job status events.
+func (c *Client) ListFineTunes(ctx context.Context) ([]FineTune, error) {
+	// Fetch the raw JSON response:
+	body, err := c.ListFineTunesRaw(ctx)
+	if err != nil {
+		return nil, err
+	}
+	// Unmarshal the JSON response into a list of fine-tunes:
+	var list FineTuneList
+	if err := json.Unmarshal(body, &list); err != nil {
+		return nil, fmt.Errorf("list fine-tunes: error unmarshaling response: %w", err)
+	}
+	fineTunes := list.Data
+	// Sort the fine-tunes by name or ID and return:
+	sort.Slice(fineTunes, func(i, j int) bool { return fineTunes[i].Name() < fineTunes[j].Name() })
+	return fineTunes, nil
+}
+
+// ReadFineTuneRaw reads the metatdata detail of the specified fine-tuning job. It returns the raw JSON response.
+func (c *Client) ReadFineTuneRaw(ctx context.Context, id string) ([]byte, error) {
+	req, err := c.getRequest(ctx, "/fine-tunes/"+id)
+	if err != nil {
+		return nil, fmt.Errorf("read fine-tune %s: %w", id, err)
+	}
+	body, err := c.sendRequest(req)
+	if err != nil {
+		return nil, fmt.Errorf("read fine-tune %s: %w", id, err)
+	}
+	return body, nil
+}
+
+// ReadFineTune reads the metadata detail of the specified fine-tuning job.
+func (c *Client) ReadFineTune(ctx context.Context, id string) (FineTune, error) {
+	var fineTune FineTune
+	body, err := c.ReadFineTuneRaw(ctx, id)
+	if err != nil {
+		return fineTune, err
+	}
+	if err := json.Unmarshal(body, &fineTune); err != nil {
+		return fineTune, fmt.Errorf("read fine-tune %s: error unmarshaling response: %w", id, err)
+	}
+	return fineTune, nil
+}
+
+// ListFineTuneEventsRaw lists the events for the specified fine-tuning job. It returns the raw JSON response.
+func (c *Client) ListFineTuneEventsRaw(ctx context.Context, id string) ([]byte, error) {
+	req, err := c.getRequest(ctx, "/fine-tunes/"+id+"/events")
+	if err != nil {
+		return nil, fmt.Errorf("list fine-tune events %s: %w", id, err)
+	}
+	body, err := c.sendRequest(req)
+	if err != nil {
+		return nil, fmt.Errorf("list fine-tune events %s: %w", id, err)
+	}
+	return body, nil
+}
+
+// ListFineTuneEvents lists the events for the specified fine-tuning job.
+func (c *Client) ListFineTuneEvents(ctx context.Context, id string) ([]Event, error) {
+	// Fetch the raw JSON response:
+	body, err := c.ListFineTuneEventsRaw(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	// Unmarshal the JSON response into a list of fine-tune events:
+	var list EventList
+	if err := json.Unmarshal(body, &list); err != nil {
+		return nil, fmt.Errorf("list fine-tune events %s: error unmarshaling response: %w", id, err)
+	}
+	return list.Data, nil
+}
+
+// CancelFineTune cancels the specified fine-tuning job.
+func (c *Client) CancelFineTune(ctx context.Context, id string) (FineTune, error) {
+	var fineTune FineTune
+	req, err := c.getRequest(ctx, "/fine-tunes/"+id+"/cancel")
+	if err != nil {
+		return fineTune, fmt.Errorf("cancel fine-tune %s: %w", id, err)
+	}
+	req.Method = http.MethodPost
+	body, err := c.sendRequest(req)
+	if err != nil {
+		return fineTune, fmt.Errorf("cancel fine-tune %s: %w", id, err)
+	}
+	if err := json.Unmarshal(body, &fineTune); err != nil {
+		return fineTune, fmt.Errorf("cancel fine-tune %s: error unmarshaling response: %w", id, err)
+	}
+	return fineTune, nil
+}
+
+// DeleteFineTune deletes the specified fine-tuned model.
+// The ID is the field FineTunedModel in the FineTune struct.
+func (c *Client) DeleteFineTune(ctx context.Context, id string) error {
+	req, err := c.getRequest(ctx, "/models/"+id)
+	if err != nil {
+		return fmt.Errorf("delete fine-tune %s: %w", id, err)
+	}
+	req.Method = http.MethodDelete
+	_, err = c.sendRequest(req)
+	if err != nil {
+		return fmt.Errorf("delete fine-tune %s: %w", id, err)
 	}
 	return nil
 }
