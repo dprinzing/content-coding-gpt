@@ -1,6 +1,7 @@
 package main
 
 import (
+	"content-coding-gpt/pkg/data"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -135,7 +136,7 @@ func readFile(cmd *cobra.Command, args []string) error {
 			if err != nil {
 				return err
 			}
-			fmt.Println(string(body))
+			fmt.Print(string(body))
 		}
 		return nil
 	}
@@ -160,15 +161,7 @@ func prepareFile(cmd *cobra.Command, args []string) error {
 	append, _ := cmd.Flags().GetBool("append")
 	csvPath := args[0]
 	jsonPath := args[1]
-	csv, err := ReadCSVFile(csvPath, true)
-	if err != nil {
-		return fmt.Errorf("prepare file: %w", err)
-	}
-	records := PrepareTrainingRecords(csv)
-	if err := WriteJSONLFile(jsonPath, append, records); err != nil {
-		return fmt.Errorf("prepare file: %w", err)
-	}
-	return nil
+	return data.PrepareTrainingFile(csvPath, jsonPath, append)
 }
 
 // uploadFile uploads a JSONL fine-tuning file.

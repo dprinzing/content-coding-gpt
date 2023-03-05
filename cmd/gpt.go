@@ -38,6 +38,7 @@ func main() {
 	initModelCmd(rootCmd)
 	initFileCmd(rootCmd)
 	initTuneCmd(rootCmd)
+	initCompleteCmd(rootCmd)
 
 	// Execute the specified command:
 	if err := rootCmd.Execute(); err != nil {

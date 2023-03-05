@@ -85,12 +85,12 @@ func (c *Client) sendRequest(req *http.Request) ([]byte, error) {
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, fmt.Errorf("not found: %s", req.URL.Path)
 	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("error sending %s request: status code %d", req.URL.Path, resp.StatusCode)
-	}
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("error reading %s response body: %w", req.URL.Path, err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		return body, fmt.Errorf("error sending %s request: status code %d", req.URL.Path, resp.StatusCode)
 	}
 	return body, nil
 }
@@ -436,4 +436,36 @@ func (c *Client) DeleteFineTune(ctx context.Context, id string) error {
 		return fmt.Errorf("delete fine-tune %s: %w", id, err)
 	}
 	return nil
+}
+
+// CreateCompletionRaw creates a new text completion. It returns the raw JSON response.
+func (c *Client) CreateCompletionRaw(ctx context.Context, req CompletionRequest) ([]byte, error) {
+	body, err := json.Marshal(req)
+	if err != nil {
+		return nil, fmt.Errorf("create completion: %w", err)
+	}
+	httpReq, err := c.postRequest(ctx, "/completions", bytes.NewReader(body))
+	if err != nil {
+		return nil, fmt.Errorf("create completion: %w", err)
+	}
+	raw, err := c.sendRequest(httpReq)
+	if err != nil {
+		fmt.Println(string(body))
+		fmt.Println(string(raw))
+		return raw, fmt.Errorf("create completion: %w", err)
+	}
+	return raw, nil
+}
+
+// CreateCompletion creates a new text completion.
+func (c *Client) CreateCompletion(ctx context.Context, req CompletionRequest) (Completion, error) {
+	var completion Completion
+	raw, err := c.CreateCompletionRaw(ctx, req)
+	if err != nil {
+		return completion, err
+	}
+	if err := json.Unmarshal(raw, &completion); err != nil {
+		return completion, fmt.Errorf("create completion: error unmarshaling response: %w", err)
+	}
+	return completion, nil
 }
