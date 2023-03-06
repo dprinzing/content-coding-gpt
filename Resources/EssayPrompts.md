@@ -15,6 +15,14 @@
 5. “This person feels that they deserve more respect than everyone else.”
 6. “This person feels that they do not have very many weaknesses.”
 
+## Humility Hallmarks
+
+1. Humble people have calm, accepting self-concepts that are not hypersensitive to ego threats. They can be aware of their weaknesses and deficiencies, but these thoughts do not cause excessive distress.
+2. Humble people can perceive themselves and others clearly, without the need to exaggerate information in either a self-enhancing or self-debasing direction. Humble people can consider both their strengths and weaknesses and accept responsibility for their mistakes.
+3. Humble people remain open to discovering new insights about themselves and the world. They are teachable and seek the truth, even when it may be personally embarrassing or unflattering. Therefore, humble people able to receive negative feedback and grow from it.
+4. Humble people show a lack of self-focus and an increased awareness of and appreciation for others. Not needing to bolster their own egos allows them to be genuinely happy when other people excel.
+5. Humble people have egalitarian beliefs. They see others as having the same intrinsic value and importance as themselves.
+
 ## Spirituality Prompts
 
 **Dream**: "Imagine that you have a dream that your far-away loved one (e.g. grandmother, grandfather, parent, close friend, etc.) unexpectedly visits to say they love you and to impart life wisdom. You wake up to learn that they died the previous night. Please tell us how and why you think this happens.”

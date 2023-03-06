@@ -47,7 +47,7 @@ func ReadCSVFile(path string, skipHeader bool) ([][]string, error) {
 
 	// Skip the header if specified:
 	if skipHeader {
-		_, err := r.Read()
+		_, err = r.Read()
 		if err != nil {
 			return nil, fmt.Errorf("read csv file %s: %w", path, err)
 		}

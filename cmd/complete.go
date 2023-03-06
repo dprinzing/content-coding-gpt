@@ -69,9 +69,9 @@ func completeRandom(cmd *cobra.Command, args []string) error {
 
 	// Raw response?
 	if raw {
-		body, err := apiClient.CreateCompletionRaw(ctx, request)
-		if err != nil {
-			return err
+		body, e := apiClient.CreateCompletionRaw(ctx, request)
+		if e != nil {
+			return e
 		}
 		fmt.Println(string(jsonReq))
 		fmt.Print(string(body))
@@ -151,14 +151,14 @@ func completeEssay(cmd *cobra.Command, args []string) error {
 		records := make([]data.HumilityRecord, 0, len(essays))
 		for i, essay := range essays {
 			request := essay.PlainCompletionRequest(essayType, modelID, maxTokens)
-			completion, err := apiClient.CreateCompletion(ctx, request)
-			if err != nil {
-				fmt.Printf("%d: pid %d: %v\n", i, essay.ID, err)
+			completion, e := apiClient.CreateCompletion(ctx, request)
+			if e != nil {
+				fmt.Printf("%d: pid %d: %v\n", i, essay.ID, e)
 				continue
 			}
-			r, err := data.NewHumilityRecord(essay, essayType, completion)
-			if err != nil {
-				fmt.Printf("%d: pid %d: %v\n", i, essay.ID, err)
+			r, e := data.NewHumilityRecord(essay, essayType, completion)
+			if e != nil {
+				fmt.Printf("%d: pid %d: %v\n", i, essay.ID, e)
 				continue
 			}
 			records = append(records, r)
@@ -172,14 +172,14 @@ func completeEssay(cmd *cobra.Command, args []string) error {
 		records := make([]data.SpiritualRecord, 0, len(essays))
 		for i, essay := range essays {
 			request := essay.PlainCompletionRequest(essayType, modelID, maxTokens)
-			completion, err := apiClient.CreateCompletion(ctx, request)
-			if err != nil {
-				fmt.Printf("%d: pid %d: %v\n", i, essay.ID, err)
+			completion, e := apiClient.CreateCompletion(ctx, request)
+			if e != nil {
+				fmt.Printf("%d: pid %d: %v\n", i, essay.ID, e)
 				continue
 			}
-			r, err := data.NewSpiritualRecord(essay, essayType, completion)
-			if err != nil {
-				fmt.Printf("%d: pid %d: %v\n", i, essay.ID, err)
+			r, e := data.NewSpiritualRecord(essay, essayType, completion)
+			if e != nil {
+				fmt.Printf("%d: pid %d: %v\n", i, essay.ID, e)
 				continue
 			}
 			records = append(records, r)

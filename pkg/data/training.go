@@ -70,17 +70,17 @@ func PrepareTrainingFile(csvPath string, jsonPath string, appendFile bool) error
 	// Generate the training records:
 	var records []TrainingRecord
 	if fileType == "humility" {
-		recs, err := ReadHumilityRecords(csvPath)
-		if err != nil {
-			return fmt.Errorf("prepare training file %s: %w", csvPath, err)
+		recs, e := ReadHumilityRecords(csvPath)
+		if e != nil {
+			return fmt.Errorf("prepare training file %s: %w", csvPath, e)
 		}
 		for _, r := range recs {
 			records = append(records, r.PlainTrainingRecord())
 		}
 	} else if fileType == "spiritual" {
-		recs, err := ReadSpiritualRecords(csvPath)
-		if err != nil {
-			return fmt.Errorf("prepare training file %s: %w", csvPath, err)
+		recs, e := ReadSpiritualRecords(csvPath)
+		if e != nil {
+			return fmt.Errorf("prepare training file %s: %w", csvPath, e)
 		}
 		for _, r := range recs {
 			records = append(records, r.PlainTrainingRecord())

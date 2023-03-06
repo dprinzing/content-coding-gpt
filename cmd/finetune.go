@@ -98,9 +98,9 @@ func listTunes(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	if raw {
-		body, err := apiClient.ListFineTunesRaw(ctx)
-		if err != nil {
-			return err
+		body, e := apiClient.ListFineTunesRaw(ctx)
+		if e != nil {
+			return e
 		}
 		fmt.Println(string(body))
 		return nil
@@ -174,9 +174,9 @@ func listTuneEvents(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	if raw {
-		body, err := apiClient.ListFineTuneEventsRaw(ctx, args[0])
-		if err != nil {
-			return err
+		body, e := apiClient.ListFineTuneEventsRaw(ctx, args[0])
+		if e != nil {
+			return e
 		}
 		fmt.Println(string(body))
 		return nil
@@ -226,9 +226,9 @@ func createTune(cmd *cobra.Command, args []string) error {
 
 	// Validate the base model if it's not one of main models.
 	if base != "ada" && base != "babbage" && base != "curie" && base != "davinci" {
-		_, err := apiClient.ReadModel(ctx, base)
-		if err != nil {
-			return fmt.Errorf("invalid base model %s: %w", base, err)
+		_, e := apiClient.ReadModel(ctx, base)
+		if e != nil {
+			return fmt.Errorf("invalid base model %s: %w", base, e)
 		}
 	}
 

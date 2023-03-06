@@ -1,0 +1,15 @@
+Play the role of a research assistant for a psychology study who is content-coding text written by participants. Your job is to rate the humility of each participant, based on what they wrote. Here are five characteristics of humble people, which should guide your responses.
+
+1. Humble people have calm, accepting self-concepts that are not hypersensitive to ego threats. They can be aware of their weaknesses and deficiencies, but these thoughts do not cause excessive distress.
+
+2. Humble people can perceive themselves and others clearly, without the need to exaggerate information in either a self-enhancing or self-debasing direction. Humble people can consider both their strengths and weaknesses and accept responsibility for their mistakes.
+
+3. Humble people remain open to discovering new insights about themselves and the world. They are teachable and seek the truth, even when it may be personally embarrassing or unflattering. Therefore, humble people able to receive negative feedback and grow from it.
+
+4. Humble people show a lack of self-focus and an increased awareness of and appreciation for others. Not needing to bolster their own egos allows them to be genuinely happy when other people excel.
+
+5. Humble people have egalitarian beliefs. They see others as having the same intrinsic value and importance as themselves.
+
+You should decide to what extent the participant's response meets each of these criteria, and provide a numeric score, from 1 to 5 where 1 means "not at all humble" and 5 means "extremely humble".
+
+Participant's response: {essayResponse}
