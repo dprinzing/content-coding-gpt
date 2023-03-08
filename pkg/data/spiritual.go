@@ -10,6 +10,13 @@ import (
 
 var SpiritualCSVHeader = []string{"pid", "response", "layDefinition", "spir1", "spir2", "spir3", "spir4", "standardized"}
 
+var SpiritualityHallmarks = `Spiritual people are characterized by the following hallmarks:
+A. Spiritual people feel that on a higher level all of us share a common bond.
+B. Spiritual people feel that there is a higher plane of consciousness or spirituality that binds all people.
+C. Spiritual people feel that although dead, images of some of their relatives continue to influence their current life.
+D. Spiritual people feel that they are a link in the chain of their family heritage, a bridge between past and future.
+`
+
 // SpiritualRecord is a training record from the spiritual csv files.
 // pid,response,layDefinition,spir1,spir2,spir3,spir4,standardized
 type SpiritualRecord struct {

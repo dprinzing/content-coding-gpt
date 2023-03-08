@@ -10,6 +10,14 @@ import (
 
 var HumilityCSVHeader = []string{"pid", "response", "hum1", "hum2", "hum3", "hum4", "hum5", "hum6", "standardized"}
 
+var HumilityHallmarks = `Humble people are characterized by the following hallmarks:
+A. Humble people have calm, accepting self-concepts that are not hypersensitive to ego threats. They can be aware of their weaknesses and deficiencies, but these thoughts do not cause excessive distress.
+B. Humble people can perceive themselves and others clearly, without the need to exaggerate information in either a self-enhancing or self-debasing direction. Humble people can consider both their strengths and weaknesses and accept responsibility for their mistakes.
+C. Humble people remain open to discovering new insights about themselves and the world. They are teachable and seek the truth, even when it may be personally embarrassing or unflattering. Therefore, humble people able to receive negative feedback and grow from it.
+D. Humble people show a lack of self-focus and an increased awareness of and appreciation for others. Not needing to bolster their own egos allows them to be genuinely happy when other people excel.
+E. Humble people have egalitarian beliefs. They see others as having the same intrinsic value and importance as themselves.
+`
+
 // HumilityRecord is a training record from the humility csv files.
 // pid,response,hum1,hum2,hum3,hum4,hum5,hum6,standardized
 type HumilityRecord struct {

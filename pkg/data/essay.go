@@ -6,7 +6,38 @@ import (
 	"fmt"
 	"math/rand"
 	"strconv"
+	"time"
 )
+
+// ConflictEssayPrompt was the writing prompt for the conflict/angry essay.
+var ConflictEssayPrompt = "“Imagine someone is angry with you. Why are they angry with you? What led them to be angry with you? How do you feel about the situation?”"
+
+// AwardEssayPrompt was the writing prompt for the award essay.
+var AwardEssayPrompt = "“Imagine that you have just received an award. What did you receive the award in? How were you able to achieve what brought you the award? How do you feel about getting it?”"
+
+// DreamEssayPrompt was the writing prompt for the dream essay.
+var DreamEssayPrompt = "“Imagine that you have a dream that your far-away loved one (e.g. grandmother, grandfather, parent, close friend, etc.) unexpectedly visits to say they love you and to impart life wisdom. You wake up to learn that they died the previous night. Please tell us how and why you think this happens.”"
+
+// DejavuEssayPrompt was the writing prompt for the deja vu essay.
+var DejavuEssayPrompt = "“Imagine that you meet someone for the first time and share an uncanny sense that you've known each other for decades. Please tell us how and why you think this happened.”"
+
+// EssayPrompts is a map of essay types to their writing prompts.
+var EssayPrompts = map[string]string{
+	"conflict": ConflictEssayPrompt,
+	"angry":    ConflictEssayPrompt,
+	"award":    AwardEssayPrompt,
+	"dream":    DreamEssayPrompt,
+	"dejavu":   DejavuEssayPrompt,
+}
+
+// Hallmarks is a map of essay types to their corresponding hallmarks.
+var Hallmarks = map[string]string{
+	"conflict": HumilityHallmarks,
+	"angry":    HumilityHallmarks,
+	"award":    HumilityHallmarks,
+	"dream":    SpiritualityHallmarks,
+	"dejavu":   SpiritualityHallmarks,
+}
 
 // EssayTypes is a list of supported essay types.
 // Note that "conflict" and "angry" are equivalent.
@@ -87,6 +118,39 @@ func (r EssayRecord) PlainCompletionRequest(essayType string, model string, maxT
 	}
 }
 
+// ChatRequest converts an EssayRecord into an OpenAI ChatRequest.
+func (r EssayRecord) ChatRequest(essayType string, temperature float32, maxTokens int) openai.ChatRequest {
+	prompt := Hallmarks[essayType]
+	prompt += "\nA research study participant was given the following writing prompt: "
+	prompt += EssayPrompts[essayType]
+	prompt += "\n\nThe participant wrote the following: "
+	prompt += r.SelectEssay(essayType)
+	prompt += "\n\nPlease content-code the participant's response, assessing the degree to which the "
+	prompt += "participant's response is consistent with the above hallmarks. Your assessment should "
+	prompt += "result in a single composite number ranging from -1.0 to 1.0, where -1.0 indicates that "
+	prompt += "the participant's response is completely inconsistent with the hallmarks, 0.0 indicates "
+	prompt += "that the participant's response is completely neutral with respect to the hallmarks, and "
+	prompt += "1.0 indicates that the participant's response is completely consistent with the hallmarks. "
+	prompt += "The composite score should be provided first, followed by reasons for your assessment.\n\n"
+	return openai.ChatRequest{
+		Model: "gpt-3.5-turbo",
+		Messages: []openai.Message{
+			{
+				Role: openai.SYSTEM,
+				Content: "You are a psychology research assistant who is content-coding " +
+					"text written by participants in a research study.",
+			},
+			{
+				Role:    openai.USER,
+				Content: prompt,
+			},
+		},
+		Temperature: temperature,
+		MaxTokens:   maxTokens,
+		User:        strconv.Itoa(r.ID),
+	}
+}
+
 // NewEssayRecord creates a new EssayRecord from a slice of strings,
 // ostensibly read from a CSV file.
 func NewEssayRecord(fields []string) (EssayRecord, error) {
@@ -131,4 +195,62 @@ func RandomEssayRecord() (EssayRecord, error) {
 		return EssayRecord{}, fmt.Errorf("random essay record: %w", err)
 	}
 	return records[rand.Intn(len(records))], nil
+}
+
+// EssayCompletion provides a request, response, and score for a single essay.
+type EssayCompletion struct {
+	Request  openai.ChatRequest `json:"request"`
+	Response openai.Chat        `json:"response"`
+	Score    EssayScore         `json:"score"`
+}
+
+// EssayScore contains the content-coded score for a single essay.
+// pid,essay_type,essay,score,comments,duration
+type EssayScore struct {
+	ID        int     `csv:"pid" json:"pid"`
+	EssayType string  `csv:"essay_type" json:"essay_type"`
+	Essay     string  `csv:"essay" json:"essay"`
+	Score     float32 `csv:"score" json:"score"`
+	Comments  string  `csv:"comments" json:"comments"`
+	Millis    int64   `csv:"millis" json:"millis"`
+}
+
+// CSVHeader returns the CSV header for an EssayScore.
+func (s EssayScore) CSVHeader() []string {
+	return []string{"pid", "essay_type", "essay", "score", "comments", "millis"}
+}
+
+// CSVFields returns the CSV fields for an EssayScore.
+func (s EssayScore) CSVFields() []string {
+	return []string{
+		strconv.Itoa(s.ID),
+		s.EssayType,
+		s.Essay,
+		strconv.FormatFloat(float64(s.Score), 'f', 2, 32),
+		s.Comments,
+		strconv.FormatInt(s.Millis, 10),
+	}
+}
+
+// NewEssayScore creates a new EssayScore from an essay, essay type, chat, and duration.
+func NewEssayScore(essay EssayRecord, essayType string, chat openai.Chat, duration time.Duration) (EssayScore, error) {
+	score, err := chat.ExtractScore()
+	return EssayScore{
+		ID:        essay.ID,
+		EssayType: essayType,
+		Essay:     essay.SelectEssay(essayType),
+		Score:     score,
+		Comments:  chat.Choices[0].Message.Content,
+		Millis:    duration.Milliseconds(),
+	}, err
+}
+
+// WriteEssayScores writes a slice of EssayScores to a CSV file.
+func WriteEssayScores(path string, scores []EssayScore) error {
+	csvRecords := make([][]string, len(scores)+1)
+	csvRecords[0] = EssayScore{}.CSVHeader()
+	for i, score := range scores {
+		csvRecords[i+1] = score.CSVFields()
+	}
+	return WriteCSVFile(path, csvRecords)
 }

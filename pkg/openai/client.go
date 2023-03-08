@@ -469,3 +469,35 @@ func (c *Client) CreateCompletion(ctx context.Context, req CompletionRequest) (C
 	}
 	return completion, nil
 }
+
+// ChatCompletionRaw creates a new chat completion. It returns the raw JSON response.
+func (c *Client) ChatCompletionRaw(ctx context.Context, req ChatRequest) ([]byte, error) {
+	body, err := json.Marshal(req)
+	if err != nil {
+		return nil, fmt.Errorf("chat completion: %w", err)
+	}
+	httpReq, err := c.postRequest(ctx, "/chat/completions", bytes.NewReader(body))
+	if err != nil {
+		return nil, fmt.Errorf("chat completion: %w", err)
+	}
+	raw, err := c.sendRequest(httpReq)
+	if err != nil {
+		fmt.Println(string(body))
+		fmt.Println(string(raw))
+		return raw, fmt.Errorf("chat completion: %w", err)
+	}
+	return raw, nil
+}
+
+// ChatCompletion creates a new chat completion.
+func (c *Client) ChatCompletion(ctx context.Context, req ChatRequest) (Chat, error) {
+	var chat Chat
+	raw, err := c.ChatCompletionRaw(ctx, req)
+	if err != nil {
+		return chat, err
+	}
+	if err := json.Unmarshal(raw, &chat); err != nil {
+		return chat, fmt.Errorf("chat completion: error unmarshaling response: %w", err)
+	}
+	return chat, nil
+}

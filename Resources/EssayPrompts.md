@@ -25,7 +25,7 @@
 
 ## Spirituality Prompts
 
-**Dream**: "Imagine that you have a dream that your far-away loved one (e.g. grandmother, grandfather, parent, close friend, etc.) unexpectedly visits to say they love you and to impart life wisdom. You wake up to learn that they died the previous night. Please tell us how and why you think this happens.”
+**Dream**: “Imagine that you have a dream that your far-away loved one (e.g. grandmother, grandfather, parent, close friend, etc.) unexpectedly visits to say they love you and to impart life wisdom. You wake up to learn that they died the previous night. Please tell us how and why you think this happens.”
 
 **Déjà Vu**: “Imagine that you meet someone for the first time and share an uncanny sense that you’ve known each other for decades. Please tell us how and why you think this happened.”
 

@@ -78,16 +78,16 @@ type CompletionRequest struct {
 // Completion provides a predicted text completion in response to a provided
 // prompt and other parameters.
 type Completion struct {
-	ID      string   `json:"id"`      // eg. "cmpl-6qU1OV5U2jx80TynLg6L8dmGC5kVJ"
-	Object  string   `json:"object"`  // eg. "text_completion"
-	Created int64    `json:"created"` // epoch seconds, eg. 1677966478
-	Model   string   `json:"model"`   // eg. "text-davinci-003"
-	Choices []Choice `json:"choices"`
-	Usage   Usage    `json:"usage"`
+	ID      string       `json:"id"`      // eg. "cmpl-6qU1OV5U2jx80TynLg6L8dmGC5kVJ"
+	Object  string       `json:"object"`  // eg. "text_completion"
+	Created int64        `json:"created"` // epoch seconds, eg. 1677966478
+	Model   string       `json:"model"`   // eg. "text-davinci-003"
+	Usage   Usage        `json:"usage"`
+	Choices []TextChoice `json:"choices"`
 }
 
-// Choice provides a possible text completion generated in response to a prompt.
-type Choice struct {
+// TextChoice provides a possible text completion generated in response to a prompt.
+type TextChoice struct {
 	Text         string        `json:"text"`
 	Index        int           `json:"index"`
 	LogProbs     LogProbResult `json:"logprobs,omitempty"`

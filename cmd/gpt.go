@@ -35,10 +35,11 @@ func main() {
 	rootCmd.AddCommand(aboutCmd)
 
 	// Initialize the commands:
-	initModelCmd(rootCmd)
-	initFileCmd(rootCmd)
-	initTuneCmd(rootCmd)
+	initChatCmd(rootCmd)
 	initCompleteCmd(rootCmd)
+	initFileCmd(rootCmd)
+	initModelCmd(rootCmd)
+	initTuneCmd(rootCmd)
 
 	// Execute the specified command:
 	if err := rootCmd.Execute(); err != nil {
