@@ -4,22 +4,27 @@ import (
 	"content-coding-gpt/pkg/openai"
 	"errors"
 	"fmt"
+	"io"
 	"math/rand"
+	"os"
 	"strconv"
-	"time"
+	"strings"
 )
 
+// templateCache is a cache of file paths to their corresponding templates.
+var templateCache = map[string]string{}
+
 // ConflictEssayPrompt was the writing prompt for the conflict/angry essay.
-var ConflictEssayPrompt = "“Imagine someone is angry with you. Why are they angry with you? What led them to be angry with you? How do you feel about the situation?”"
+var ConflictEssayPrompt = "Imagine someone is angry with you. Why are they angry with you? What led them to be angry with you? How do you feel about the situation?"
 
 // AwardEssayPrompt was the writing prompt for the award essay.
-var AwardEssayPrompt = "“Imagine that you have just received an award. What did you receive the award in? How were you able to achieve what brought you the award? How do you feel about getting it?”"
+var AwardEssayPrompt = "Imagine that you have just received an award. What did you receive the award in? How were you able to achieve what brought you the award? How do you feel about getting it?"
 
 // DreamEssayPrompt was the writing prompt for the dream essay.
-var DreamEssayPrompt = "“Imagine that you have a dream that your far-away loved one (e.g. grandmother, grandfather, parent, close friend, etc.) unexpectedly visits to say they love you and to impart life wisdom. You wake up to learn that they died the previous night. Please tell us how and why you think this happens.”"
+var DreamEssayPrompt = "Imagine that you have a dream that your far-away loved one (e.g. grandmother, grandfather, parent, close friend, etc.) unexpectedly visits to say they love you and to impart life wisdom. You wake up to learn that they died the previous night. Please tell us how and why you think this happens."
 
 // DejavuEssayPrompt was the writing prompt for the deja vu essay.
-var DejavuEssayPrompt = "“Imagine that you meet someone for the first time and share an uncanny sense that you've known each other for decades. Please tell us how and why you think this happened.”"
+var DejavuEssayPrompt = "Imagine that you meet someone for the first time and share an uncanny sense that you've known each other for decades. Please tell us how and why you think this happened."
 
 // EssayPrompts is a map of essay types to their writing prompts.
 var EssayPrompts = map[string]string{
@@ -121,11 +126,11 @@ func (r EssayRecord) PlainCompletionRequest(essayType string, model string, maxT
 // ChatRequest converts an EssayRecord into an OpenAI ChatRequest.
 func (r EssayRecord) ChatRequest(essayType string, temperature float32, maxTokens int) openai.ChatRequest {
 	prompt := Hallmarks[essayType]
-	prompt += "\nA research study participant was given the following writing prompt: "
+	prompt += "\nA research study participant was given the following writing prompt:\n“"
 	prompt += EssayPrompts[essayType]
-	prompt += "\n\nThe participant wrote the following: "
+	prompt += "”\n\nThe participant wrote the following:\n“"
 	prompt += r.SelectEssay(essayType)
-	prompt += "\n\nPlease content-code the participant's response, assessing the degree to which the "
+	prompt += "”\n\nPlease content-code the participant's response, assessing the degree to which the "
 	prompt += "participant's response is consistent with the above hallmarks. Your assessment should "
 	prompt += "result in a single composite number ranging from -1.0 to 1.0, where -1.0 indicates that "
 	prompt += "the participant's response is completely inconsistent with the hallmarks, 0.0 indicates "
@@ -149,6 +154,55 @@ func (r EssayRecord) ChatRequest(essayType string, temperature float32, maxToken
 		MaxTokens:   maxTokens,
 		User:        strconv.Itoa(r.ID),
 	}
+}
+
+// ChatRequestTemplate converts an EssayRecord into an OpenAI ChatRequest using a
+// specified template file. Use this method to experiment with different prompts.
+// The templates are cached, so it's efficient to use with multiple records.
+//
+// Use the following optional template variables:
+// - {{prompt}}: the essay prompt
+// - {{essay}}: the essay response text
+func (r EssayRecord) ChatRequestTemplate(essayType string, temperature float32, maxTokens int, templateFile string) (openai.ChatRequest, error) {
+	// Check the cache for the template.
+	template, ok := templateCache[templateFile]
+	if !ok {
+		// Cache miss. Read and cache the template file.
+		f, err := os.Open(templateFile)
+		if err != nil {
+			return openai.ChatRequest{}, fmt.Errorf("error opening template file %s: %w", templateFile, err)
+		}
+		defer f.Close()
+		b, err := io.ReadAll(f)
+		if err != nil {
+			return openai.ChatRequest{}, fmt.Errorf("error reading template file %s: %w", templateFile, err)
+		}
+		template = string(b)
+		templateCache[templateFile] = template
+	}
+
+	// Replace the template variables.
+	prompt := strings.ReplaceAll(template, "{{prompt}}", EssayPrompts[essayType])
+	prompt = strings.ReplaceAll(prompt, "{{essay}}", r.SelectEssay(essayType))
+
+	// Create the ChatRequest.
+	return openai.ChatRequest{
+		Model: "gpt-3.5-turbo",
+		Messages: []openai.Message{
+			{
+				Role: openai.SYSTEM,
+				Content: "You are a psychology research assistant who is content-coding " +
+					"text written by participants in a research study.",
+			},
+			{
+				Role:    openai.USER,
+				Content: prompt,
+			},
+		},
+		Temperature: temperature,
+		MaxTokens:   maxTokens,
+		User:        strconv.Itoa(r.ID),
+	}, nil
 }
 
 // NewEssayRecord creates a new EssayRecord from a slice of strings,
@@ -188,6 +242,20 @@ func ReadEssayRecords(path string) ([]EssayRecord, error) {
 	return ReadCSVRecords(path, NewEssayRecord)
 }
 
+// ReadEssayRecord returns the specified EssayRecord.
+func ReadEssayRecord(id int) (EssayRecord, error) {
+	records, err := ReadEssayRecords("data/original/essays.csv")
+	if err != nil {
+		return EssayRecord{}, fmt.Errorf("read essay record: %w", err)
+	}
+	for _, record := range records {
+		if record.ID == id {
+			return record, nil
+		}
+	}
+	return EssayRecord{}, fmt.Errorf("essay record %d not found", id)
+}
+
 // RandomEssayRecord returns a random EssayRecord.
 func RandomEssayRecord() (EssayRecord, error) {
 	records, err := ReadEssayRecords("data/original/essays.csv")
@@ -199,9 +267,10 @@ func RandomEssayRecord() (EssayRecord, error) {
 
 // EssayCompletion provides a request, response, and score for a single essay.
 type EssayCompletion struct {
-	Request  openai.ChatRequest `json:"request"`
-	Response openai.Chat        `json:"response"`
-	Score    EssayScore         `json:"score"`
+	Request  openai.ChatRequest  `json:"request"`
+	Response openai.ChatResponse `json:"response"`
+	Score    EssayScore          `json:"score"`
+	ErrMsg   string              `json:"error,omitempty"`
 }
 
 // EssayScore contains the content-coded score for a single essay.
@@ -233,15 +302,15 @@ func (s EssayScore) CSVFields() []string {
 }
 
 // NewEssayScore creates a new EssayScore from an essay, essay type, chat, and duration.
-func NewEssayScore(essay EssayRecord, essayType string, chat openai.Chat, duration time.Duration) (EssayScore, error) {
-	score, err := chat.ExtractScore()
+func NewEssayScore(essay EssayRecord, essayType string, chat openai.ChatResponse, reverse bool, millis int64) (EssayScore, error) {
+	score, err := chat.ExtractScore(reverse)
 	return EssayScore{
 		ID:        essay.ID,
 		EssayType: essayType,
 		Essay:     essay.SelectEssay(essayType),
 		Score:     score,
 		Comments:  chat.Choices[0].Message.Content,
-		Millis:    duration.Milliseconds(),
+		Millis:    millis,
 	}, err
 }
 

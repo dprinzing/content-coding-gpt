@@ -2,9 +2,11 @@ package main
 
 import (
 	"content-coding-gpt/pkg/data"
+	"content-coding-gpt/pkg/openai"
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -29,8 +31,11 @@ func initChatCmd(root *cobra.Command) {
 		RunE:  chatRandom,
 	}
 	randomCmd.Flags().BoolP("raw", "r", false, "Raw OpenAI Response?")
+	randomCmd.Flags().BoolP("reverse", "R", false, "Extract the score from the end of the response?")
 	randomCmd.Flags().IntP("max-tokens", "t", 0, "Maximum number of tokens to generate")
 	randomCmd.Flags().Float32P("temperature", "T", 0.2, "Temperature for sampling")
+	randomCmd.Flags().IntP("id", "i", 0, "Essay ID (okay, not random :)")
+	randomCmd.Flags().StringP("prompt", "p", "", "Prompt template text file")
 	chatCmd.AddCommand(randomCmd)
 
 	// Essay Command
@@ -40,8 +45,11 @@ func initChatCmd(root *cobra.Command) {
 		Long:  "Chat complete a specific essay type from data/original/essays.csv",
 		RunE:  chatEssay,
 	}
+	essayCmd.Flags().BoolP("reverse", "R", false, "Extract the score from the end of the response?")
 	essayCmd.Flags().IntP("max-tokens", "t", 0, "Maximum number of tokens to generate")
 	essayCmd.Flags().Float32P("temperature", "T", 0.2, "Temperature for sampling")
+	essayCmd.Flags().IntP("batch-size", "b", 10, "Batch size for concurrent requests")
+	essayCmd.Flags().StringP("prompt", "p", "", "Prompt template text file")
 	chatCmd.AddCommand(essayCmd)
 }
 
@@ -50,19 +58,38 @@ func chatRandom(cmd *cobra.Command, args []string) error {
 	startTime := time.Now()
 	ctx := context.Background()
 	raw, _ := cmd.Flags().GetBool("raw")
+	reverse, _ := cmd.Flags().GetBool("reverse")
 	maxTokens, _ := cmd.Flags().GetInt("max-tokens")
 	temperature, _ := cmd.Flags().GetFloat32("temperature")
+	id, _ := cmd.Flags().GetInt("id")
+	promptFile, _ := cmd.Flags().GetString("prompt")
 	essayType := args[0]
 	if !data.ValidEssayType(essayType) {
 		return fmt.Errorf("essay type %s is not one of: %s", essayType, strings.Join(data.EssayTypes, ", "))
 	}
 
-	// Select a random essay for a chat request:
-	essay, err := data.RandomEssayRecord()
+	// Select an essay for a chat request:
+	var essay data.EssayRecord
+	var err error
+	if id > 0 {
+		essay, err = data.ReadEssayRecord(id)
+	} else {
+		essay, err = data.RandomEssayRecord()
+	}
 	if err != nil {
 		return err
 	}
-	request := essay.ChatRequest(essayType, temperature, maxTokens)
+
+	// Generate the chat request:
+	var request openai.ChatRequest
+	if promptFile != "" {
+		request, err = essay.ChatRequestTemplate(essayType, temperature, maxTokens, promptFile)
+		if err != nil {
+			return err
+		}
+	} else {
+		request = essay.ChatRequest(essayType, temperature, maxTokens)
+	}
 
 	// Raw response?
 	if raw {
@@ -82,20 +109,21 @@ func chatRandom(cmd *cobra.Command, args []string) error {
 	}
 
 	// Chat complete the prompt:
-	chat, err := apiClient.ChatCompletion(ctx, request)
+	response, err := apiClient.ChatCompletion(ctx, request)
 	if err != nil {
 		return err
 	}
 
 	// Extract the score:
-	score, err := data.NewEssayScore(essay, essayType, chat, time.Since(startTime))
-	if err != nil {
-		return err
-	}
+	duration := time.Since(startTime).Milliseconds()
+	score, err := data.NewEssayScore(essay, essayType, response, reverse, duration)
 	results := data.EssayCompletion{
 		Request:  request,
-		Response: chat,
+		Response: response,
 		Score:    score,
+	}
+	if err != nil {
+		results.ErrMsg = err.Error()
 	}
 	j, err := json.MarshalIndent(results, "", "  ")
 	if err != nil {
@@ -108,10 +136,13 @@ func chatRandom(cmd *cobra.Command, args []string) error {
 // chatEssay processes completions for all essays of a specified type for
 // specified model. The output is is placed in the specified CSV file.
 func chatEssay(cmd *cobra.Command, args []string) error {
-	batchStart := time.Now()
+	startTime := time.Now()
 	ctx := context.Background()
+	reverse, _ := cmd.Flags().GetBool("reverse")
 	maxTokens, _ := cmd.Flags().GetInt("max-tokens")
 	temperature, _ := cmd.Flags().GetFloat32("temperature")
+	batchSize, _ := cmd.Flags().GetInt("batch-size")
+	promptFile, _ := cmd.Flags().GetString("prompt")
 	csvFile := args[1]
 
 	// Validate the specified essay type:
@@ -126,27 +157,65 @@ func chatEssay(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// Process the essays:
-	records := make([]data.EssayScore, 0, len(essays))
-	for i, essay := range essays {
-		startTime := time.Now()
-		request := essay.ChatRequest(essayType, temperature, maxTokens)
-		chat, e := apiClient.ChatCompletion(ctx, request)
-		if e != nil {
-			fmt.Printf("%d: pid %d: %v\n", i, essay.ID, e)
-			continue
+	// Process the essays in batches:
+	var count int
+	scores := make([]data.EssayScore, 0, len(essays))
+	batches := data.Batch(essays, batchSize)
+	for i, batch := range batches {
+		batchStart := time.Now()
+		// Generate the chat requests:
+		chats := make([]openai.Chat, 0, len(batch))
+		for _, essay := range batch {
+			var request openai.ChatRequest
+			if promptFile != "" {
+				request, err = essay.ChatRequestTemplate(essayType, temperature, maxTokens, promptFile)
+				if err != nil {
+					return err // error reading the template file
+				}
+			} else {
+				request = essay.ChatRequest(essayType, temperature, maxTokens)
+			}
+			chat := openai.Chat{
+				ID:      strconv.Itoa(essay.ID),
+				Request: request,
+			}
+			chats = append(chats, chat)
 		}
-		s, e := data.NewEssayScore(essay, essayType, chat, time.Since(startTime))
-		if e != nil {
-			fmt.Printf("%d: pid %d: %v\n", i, essay.ID, e)
-			continue
+		// Process the batch:
+		results := apiClient.ChatBatch(ctx, chats)
+		for _, essay := range batch {
+			count++
+			chat, ok := results[strconv.Itoa(essay.ID)]
+			if !ok {
+				fmt.Printf("%d: pid %d: no response\n", count, essay.ID)
+				continue
+			}
+			if chat.ErrMsg != "" {
+				fmt.Printf("%d: pid %d: %s", count, essay.ID, chat.ErrMsg)
+				continue
+			}
+			score, e := data.NewEssayScore(essay, essayType, chat.Response, reverse, chat.Millis)
+			if e != nil {
+				fmt.Printf("%d: pid %d: %v\n", count, essay.ID, e)
+				continue
+			}
+			scores = append(scores, score)
+			fmt.Printf("%d: pid %d: %.1f %d\n", count, essay.ID, score.Score, score.Millis)
 		}
-		records = append(records, s)
-		fmt.Printf("%d: pid %d: %.2f %d\n", i, essay.ID, s.Score, s.Millis)
+		// Report batch time taken, progress, and predicted time remaining:
+		batchDuration := time.Since(batchStart)
+		totalDuration := time.Since(startTime)
+		averageDuration := totalDuration / time.Duration(count)
+		timeRemaining := time.Duration(len(essays)-count) * averageDuration
+		percentComplete := float32(count) / float32(len(essays)) * 100
+		fmt.Printf("batch %d: %dms (%.2f%% complete, %s remaining)\n",
+			i+1, batchDuration.Milliseconds(), percentComplete, timeRemaining)
 	}
-	err = data.WriteEssayScores(csvFile, records)
 
-	// Report the time taken:
-	fmt.Printf("completed %d essays in %s\n", len(essays), time.Since(batchStart))
+	// Write the scores to the specified CSV file:
+	err = data.WriteEssayScores(csvFile, scores)
+
+	// Report the total time taken:
+	fmt.Printf("completed %d essays in %s\n", len(essays), time.Since(startTime))
 	return err
 }

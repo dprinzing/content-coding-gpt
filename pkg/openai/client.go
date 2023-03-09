@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"sort"
+	"sync"
 	"time"
 )
 
@@ -490,8 +491,8 @@ func (c *Client) ChatCompletionRaw(ctx context.Context, req ChatRequest) ([]byte
 }
 
 // ChatCompletion creates a new chat completion.
-func (c *Client) ChatCompletion(ctx context.Context, req ChatRequest) (Chat, error) {
-	var chat Chat
+func (c *Client) ChatCompletion(ctx context.Context, req ChatRequest) (ChatResponse, error) {
+	var chat ChatResponse
 	raw, err := c.ChatCompletionRaw(ctx, req)
 	if err != nil {
 		return chat, err
@@ -500,4 +501,31 @@ func (c *Client) ChatCompletion(ctx context.Context, req ChatRequest) (Chat, err
 		return chat, fmt.Errorf("chat completion: error unmarshaling response: %w", err)
 	}
 	return chat, nil
+}
+
+// ChatBatch concurrently processes a single batch of chat completions.
+func (c *Client) ChatBatch(ctx context.Context, chats []Chat) map[string]Chat {
+	results := make(chan Chat, len(chats))
+	var wg sync.WaitGroup
+	for _, chat := range chats {
+		wg.Add(1)
+		go func(chat Chat) {
+			startTime := time.Now()
+			defer wg.Done()
+			resp, err := c.ChatCompletion(ctx, chat.Request)
+			if err != nil {
+				chat.ErrMsg = err.Error()
+			}
+			chat.Response = resp
+			chat.Millis = time.Since(startTime).Milliseconds()
+			results <- chat
+		}(chat)
+	}
+	wg.Wait()
+	close(results)
+	batch := make(map[string]Chat, len(chats))
+	for chat := range results {
+		batch[chat.ID] = chat
+	}
+	return batch
 }

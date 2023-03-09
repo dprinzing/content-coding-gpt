@@ -6,6 +6,15 @@ import (
 	"strings"
 )
 
+// Chat represents a complete request/response chat exchange.
+type Chat struct {
+	ID       string       `json:"id,omitempty"` // batch-unique ID (e.g. user ID)
+	Request  ChatRequest  `json:"request,omitempty"`
+	Response ChatResponse `json:"response,omitempty"`
+	ErrMsg   string       `json:"error,omitempty"`
+	Millis   int64        `json:"millis,omitempty"`
+}
+
 // ChatRequest represents a request structure for chat completion API.
 type ChatRequest struct {
 	// Model ID to use for completion. Example: "gpt-3.5-turbo"
@@ -63,9 +72,9 @@ type ChatRequest struct {
 	User string `json:"user,omitempty"`
 }
 
-// Chat provides a predicted text completion in response to a provided
+// ChatResponse provides a predicted text completion in response to a provided
 // prompt and other parameters.
-type Chat struct {
+type ChatResponse struct {
 	ID      string          `json:"id"`      // eg. "chatcmpl-6p9XYPYSTTRi0xEviKjjilqrWU2Ve"
 	Object  string          `json:"object"`  // eg. "chat.completion"
 	Created int64           `json:"created"` // epoch seconds, eg. 1677966478
@@ -75,7 +84,9 @@ type Chat struct {
 }
 
 // ExtractScore returns the first floating-point score found in the first choice.
-func (c *Chat) ExtractScore() (float32, error) {
+// If no score is found, an error is returned. Use reverse to search from the end
+// of the message.
+func (c *ChatResponse) ExtractScore(reverse bool) (float32, error) {
 	if len(c.Choices) == 0 {
 		return 0, errors.New("chat score: no choices found")
 	}
@@ -85,6 +96,11 @@ func (c *Chat) ExtractScore() (float32, error) {
 	fields := strings.Fields(c.Choices[0].Message.Content)
 	if len(fields) == 0 {
 		return 0, errors.New("chat score: no words found")
+	}
+	if reverse {
+		for i, j := 0, len(fields)-1; i < j; i, j = i+1, j-1 {
+			fields[i], fields[j] = fields[j], fields[i]
+		}
 	}
 	for _, field := range fields {
 		if score, err := ParseScore(field); err == nil {
@@ -96,8 +112,8 @@ func (c *Chat) ExtractScore() (float32, error) {
 
 // ParseScore parses a string as a floating-point number.
 func ParseScore(s string) (float32, error) {
-	// Check if the word starts with a minus sign or numeric digit:
-	if len(s) == 0 || (s[0] != '-' && (s[0] < '0' || s[0] > '9')) {
+	// Check if the word starts with a plus/minus sign or numeric digit:
+	if len(s) == 0 || (s[0] != '-' && s[0] != '+' && (s[0] < '0' || s[0] > '9')) {
 		return 0, errors.New("score: not a number")
 	}
 	// Remove trailing punctuation:
