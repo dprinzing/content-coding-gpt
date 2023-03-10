@@ -6,6 +6,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -23,11 +25,27 @@ func initChatCmd(root *cobra.Command) {
 	}
 	root.AddCommand(chatCmd)
 
+	// Prompt Command
+	promptCmd := &cobra.Command{
+		Use:   "prompt <promptFile>",
+		Short: "Chat complete a test prompt",
+		Long:  "Chat complete a test prompt from a specified file",
+		Args:  cobra.ExactArgs(1),
+		RunE:  chatPrompt,
+	}
+	promptCmd.Flags().BoolP("raw", "r", false, "Raw OpenAI Response?")
+	promptCmd.Flags().BoolP("verbose", "v", false, "Verbose output?")
+	promptCmd.Flags().BoolP("system", "s", false, "Include system prompt?")
+	promptCmd.Flags().IntP("max-tokens", "t", 0, "Maximum number of tokens to generate")
+	promptCmd.Flags().Float32P("temperature", "T", 0.2, "Temperature for sampling")
+	chatCmd.AddCommand(promptCmd)
+
 	// Random Command
 	randomCmd := &cobra.Command{
 		Use:   "random <essayType>",
 		Short: "Chat complete a random prompt",
 		Long:  "Chat complete a random prompt of the specified type from data/original/essays.csv",
+		Args:  cobra.ExactArgs(1),
 		RunE:  chatRandom,
 	}
 	randomCmd.Flags().BoolP("raw", "r", false, "Raw OpenAI Response?")
@@ -43,6 +61,7 @@ func initChatCmd(root *cobra.Command) {
 		Use:   "essay <essayType> <csvFile>",
 		Short: "Chat complete a specific essay type",
 		Long:  "Chat complete a specific essay type from data/original/essays.csv",
+		Args:  cobra.ExactArgs(2),
 		RunE:  chatEssay,
 	}
 	essayCmd.Flags().BoolP("reverse", "R", false, "Extract the score from the end of the response?")
@@ -51,6 +70,86 @@ func initChatCmd(root *cobra.Command) {
 	essayCmd.Flags().IntP("batch-size", "b", 10, "Batch size for concurrent requests")
 	essayCmd.Flags().StringP("prompt", "p", "", "Prompt template text file")
 	chatCmd.AddCommand(essayCmd)
+}
+
+// chatPrompt processes completions for a specified prompt.
+func chatPrompt(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+	raw, _ := cmd.Flags().GetBool("raw")
+	verbose, _ := cmd.Flags().GetBool("verbose")
+	system, _ := cmd.Flags().GetBool("system")
+	maxTokens, _ := cmd.Flags().GetInt("max-tokens")
+	temperature, _ := cmd.Flags().GetFloat32("temperature")
+	promptFile := args[0]
+
+	// Read the prompt file:
+	f, err := os.Open(promptFile)
+	if err != nil {
+		return fmt.Errorf("error opening prompt file %s: %w", promptFile, err)
+	}
+	defer f.Close()
+	b, err := io.ReadAll(f)
+	if err != nil {
+		return fmt.Errorf("error reading prompt file %s: %w", promptFile, err)
+	}
+	prompt := string(b)
+
+	// Generate the chat request:
+	var messages []openai.Message
+	if system {
+		messages = []openai.Message{data.SystemMessage}
+	}
+	messages = append(messages, openai.Message{Role: openai.USER, Content: prompt})
+	request := openai.ChatRequest{
+		Model:       "gpt-3.5-turbo",
+		Messages:    messages,
+		Temperature: temperature,
+		MaxTokens:   maxTokens,
+	}
+
+	// Output the request:
+	if raw || verbose {
+		b, _ := json.MarshalIndent(request, "", "  ")
+		fmt.Println(string(b))
+	} else {
+		if system {
+			fmt.Println("--------------------\nSystem:")
+			fmt.Println(data.SystemMessage.Content)
+		}
+		fmt.Println("--------------------\nUser:")
+		fmt.Println(prompt)
+	}
+
+	// Raw response?
+	if raw {
+		response, e := apiClient.ChatCompletionRaw(ctx, request)
+		if e != nil {
+			return e
+		}
+		fmt.Print(string(response))
+		return nil
+	}
+
+	// Chat complete the prompt:
+	response, err := apiClient.ChatCompletion(ctx, request)
+	if err != nil {
+		return err
+	}
+	content, err := response.FirstMessageContent()
+	if err != nil {
+		return err
+	}
+
+	// Output the response:
+	if verbose {
+		b, _ := json.MarshalIndent(response, "", "  ")
+		fmt.Println(string(b))
+	} else {
+		fmt.Println("--------------------\nAssistant:")
+		fmt.Println(content)
+		fmt.Println("--------------------")
+	}
+	return nil
 }
 
 // chatRandom chat completes a random prompt of the selected type.
@@ -94,9 +193,9 @@ func chatRandom(cmd *cobra.Command, args []string) error {
 	// Raw response?
 	if raw {
 		// Echo the Request
-		jsonReq, err := json.MarshalIndent(request, "", "  ")
-		if err != nil {
-			return fmt.Errorf("error marshalling JSON request: %w", err)
+		jsonReq, e := json.MarshalIndent(request, "", "  ")
+		if e != nil {
+			return fmt.Errorf("error marshalling JSON request: %w", e)
 		}
 		fmt.Println(string(jsonReq))
 		// Output the Response

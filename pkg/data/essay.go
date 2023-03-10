@@ -14,6 +14,13 @@ import (
 // templateCache is a cache of file paths to their corresponding templates.
 var templateCache = map[string]string{}
 
+// SystemMessage is the system message.
+var SystemMessage = openai.Message{
+	Role: openai.SYSTEM,
+	Content: "You are a psychology research assistant who is content-coding " +
+		"text written by participants in a research study.",
+}
+
 // ConflictEssayPrompt was the writing prompt for the conflict/angry essay.
 var ConflictEssayPrompt = "Imagine someone is angry with you. Why are they angry with you? What led them to be angry with you? How do you feel about the situation?"
 
@@ -140,15 +147,8 @@ func (r EssayRecord) ChatRequest(essayType string, temperature float32, maxToken
 	return openai.ChatRequest{
 		Model: "gpt-3.5-turbo",
 		Messages: []openai.Message{
-			{
-				Role: openai.SYSTEM,
-				Content: "You are a psychology research assistant who is content-coding " +
-					"text written by participants in a research study.",
-			},
-			{
-				Role:    openai.USER,
-				Content: prompt,
-			},
+			SystemMessage,
+			{Role: openai.USER, Content: prompt},
 		},
 		Temperature: temperature,
 		MaxTokens:   maxTokens,
@@ -189,15 +189,8 @@ func (r EssayRecord) ChatRequestTemplate(essayType string, temperature float32, 
 	return openai.ChatRequest{
 		Model: "gpt-3.5-turbo",
 		Messages: []openai.Message{
-			{
-				Role: openai.SYSTEM,
-				Content: "You are a psychology research assistant who is content-coding " +
-					"text written by participants in a research study.",
-			},
-			{
-				Role:    openai.USER,
-				Content: prompt,
-			},
+			SystemMessage,
+			{Role: openai.USER, Content: prompt},
 		},
 		Temperature: temperature,
 		MaxTokens:   maxTokens,

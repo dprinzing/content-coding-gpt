@@ -83,6 +83,17 @@ type ChatResponse struct {
 	Choices []MessageChoice `json:"choices"`
 }
 
+// FirstMessageContent returns the content of the first message in the response.
+func (c *ChatResponse) FirstMessageContent() (string, error) {
+	if len(c.Choices) == 0 {
+		return "", errors.New("chat: no choices found")
+	}
+	if len(c.Choices[0].Message.Content) == 0 {
+		return "", errors.New("chat: no content found")
+	}
+	return c.Choices[0].Message.Content, nil
+}
+
 // ExtractScore returns the first floating-point score found in the first choice.
 // If no score is found, an error is returned. Use reverse to search from the end
 // of the message.
