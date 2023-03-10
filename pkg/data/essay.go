@@ -161,7 +161,7 @@ func (r EssayRecord) ChatRequest(essayType string, temperature float32, maxToken
 // The templates are cached, so it's efficient to use with multiple records.
 //
 // Use the following optional template variables:
-// - {{prompt}}: the essay prompt
+// - {{prompt}}: the essay prompthttps://code.visualstudio.com/docs/languages/r
 // - {{essay}}: the essay response text
 func (r EssayRecord) ChatRequestTemplate(essayType string, temperature float32, maxTokens int, templateFile string) (openai.ChatRequest, error) {
 	// Check the cache for the template.
@@ -266,6 +266,17 @@ type EssayCompletion struct {
 	ErrMsg   string              `json:"error,omitempty"`
 }
 
+// String returns a string representation of an EssayCompletion.
+func (c EssayCompletion) String() string {
+	s := c.Request.String()
+	s += c.Response.String()
+	s += c.Score.String()
+	if c.ErrMsg != "" {
+		s += fmt.Sprintf("error: %s\n", c.ErrMsg)
+	}
+	return s
+}
+
 // EssayScore contains the content-coded score for a single essay.
 // pid,essay_type,essay,score,comments,duration
 type EssayScore struct {
@@ -275,6 +286,12 @@ type EssayScore struct {
 	Score     float32 `csv:"score" json:"score"`
 	Comments  string  `csv:"comments" json:"comments"`
 	Millis    int64   `csv:"millis" json:"millis"`
+}
+
+// String returns a string representation of an EssayScore.
+func (s EssayScore) String() string {
+	return fmt.Sprintf("--------------------\nid=%d type=%s score=%.2f millis=%d\n",
+		s.ID, s.EssayType, s.Score, s.Millis)
 }
 
 // CSVHeader returns the CSV header for an EssayScore.

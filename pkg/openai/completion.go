@@ -1,5 +1,7 @@
 package openai
 
+import "fmt"
+
 // CompletionRequest represents a request structure for completion API.
 type CompletionRequest struct {
 	// Model ID to use for completion. Example: "text-davinci-003"
@@ -107,4 +109,9 @@ type Usage struct {
 	PromptTokens     int `json:"prompt_tokens,omitempty"`
 	CompletionTokens int `json:"completion_tokens,omitempty"`
 	TotalTokens      int `json:"total_tokens,omitempty"`
+}
+
+// String returns a string representation of Usage.
+func (u Usage) String() string {
+	return fmt.Sprintf("prompt=%d completion=%d total=%d", u.PromptTokens, u.CompletionTokens, u.TotalTokens)
 }

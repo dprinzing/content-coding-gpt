@@ -49,6 +49,7 @@ func initChatCmd(root *cobra.Command) {
 		RunE:  chatRandom,
 	}
 	randomCmd.Flags().BoolP("raw", "r", false, "Raw OpenAI Response?")
+	randomCmd.Flags().BoolP("verbose", "v", false, "Verbose output?")
 	randomCmd.Flags().BoolP("reverse", "R", false, "Extract the score from the end of the response?")
 	randomCmd.Flags().IntP("max-tokens", "t", 0, "Maximum number of tokens to generate")
 	randomCmd.Flags().Float32P("temperature", "T", 0.2, "Temperature for sampling")
@@ -112,12 +113,7 @@ func chatPrompt(cmd *cobra.Command, args []string) error {
 		b, _ := json.MarshalIndent(request, "", "  ")
 		fmt.Println(string(b))
 	} else {
-		if system {
-			fmt.Println("--------------------\nSystem:")
-			fmt.Println(data.SystemMessage.Content)
-		}
-		fmt.Println("--------------------\nUser:")
-		fmt.Println(prompt)
+		fmt.Print(request.String())
 	}
 
 	// Raw response?
@@ -135,19 +131,13 @@ func chatPrompt(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	content, err := response.FirstMessageContent()
-	if err != nil {
-		return err
-	}
 
 	// Output the response:
 	if verbose {
 		b, _ := json.MarshalIndent(response, "", "  ")
 		fmt.Println(string(b))
 	} else {
-		fmt.Println("--------------------\nAssistant:")
-		fmt.Println(content)
-		fmt.Println("--------------------")
+		fmt.Print(response.String())
 	}
 	return nil
 }
@@ -157,6 +147,7 @@ func chatRandom(cmd *cobra.Command, args []string) error {
 	startTime := time.Now()
 	ctx := context.Background()
 	raw, _ := cmd.Flags().GetBool("raw")
+	verbose, _ := cmd.Flags().GetBool("verbose")
 	reverse, _ := cmd.Flags().GetBool("reverse")
 	maxTokens, _ := cmd.Flags().GetInt("max-tokens")
 	temperature, _ := cmd.Flags().GetFloat32("temperature")
@@ -224,11 +215,15 @@ func chatRandom(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		results.ErrMsg = err.Error()
 	}
-	j, err := json.MarshalIndent(results, "", "  ")
-	if err != nil {
-		return fmt.Errorf("error marshalling JSON chat completion: %w", err)
+	if verbose {
+		j, err := json.MarshalIndent(results, "", "  ")
+		if err != nil {
+			return fmt.Errorf("error marshalling JSON chat completion: %w", err)
+		}
+		fmt.Println(string(j))
+	} else {
+		fmt.Print(results.String())
 	}
-	fmt.Println(string(j))
 	return nil
 }
 

@@ -2,6 +2,7 @@ package openai
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 )
@@ -72,6 +73,26 @@ type ChatRequest struct {
 	User string `json:"user,omitempty"`
 }
 
+// String supports the fmt.Stringer interface.
+// Use it for a simple text display of the ChatRequest.
+func (c *ChatRequest) String() string {
+	s := "--------------------\n" + c.Model
+	if c.Temperature > 0 {
+		s += fmt.Sprintf(" temp=%.2f", c.Temperature)
+	}
+	if c.MaxTokens > 0 {
+		s += fmt.Sprintf(" max=%d", c.MaxTokens)
+	}
+	if c.User != "" {
+		s += fmt.Sprintf(" user=%s", c.User)
+	}
+	s += "\n"
+	for _, m := range c.Messages {
+		s += m.String()
+	}
+	return s
+}
+
 // ChatResponse provides a predicted text completion in response to a provided
 // prompt and other parameters.
 type ChatResponse struct {
@@ -81,6 +102,21 @@ type ChatResponse struct {
 	Model   string          `json:"model"`   // eg. "gpt-3.5-turbo"
 	Usage   Usage           `json:"usage"`
 	Choices []MessageChoice `json:"choices"`
+}
+
+// String supports the fmt.Stringer interface.
+// Use it for a simple text display of the ChatResponse.
+func (c *ChatResponse) String() string {
+	var s string
+	for _, m := range c.Choices {
+		s += m.Message.String()
+	}
+	var finish string
+	if len(c.Choices) > 0 {
+		finish = "finish=" + c.Choices[0].FinishReason
+	}
+	s += fmt.Sprintf("--------------------\n%s %s %s\n", c.Model, c.Usage, finish)
+	return s
 }
 
 // FirstMessageContent returns the content of the first message in the response.
@@ -147,4 +183,10 @@ type MessageChoice struct {
 type Message struct {
 	Role    Role   `json:"role"`
 	Content string `json:"content"`
+}
+
+// String supports the fmt.Stringer interface.
+// Use it for a simple text display of the Message.
+func (m *Message) String() string {
+	return fmt.Sprintf("--------------------\n%s:\n%s\n", m.Role, strings.TrimSpace(m.Content))
 }
