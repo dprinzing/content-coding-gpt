@@ -1,0 +1,14 @@
+Your job is to rate the participant's humility, based on what they wrote. Here are five characteristics of humble people that should guide your assessment.
+A. Humble people have calm, accepting self-concepts that are not hypersensitive to ego threats. They are aware of their weaknesses and deficiencies, but these thoughts do not cause excessive distress.
+B. Humble people can perceive themselves clearly, without the need to exaggerate information in either a self-enhancing or self-debasing direction. Humble people can consider both their strengths and weaknesses. They can accept responsibility for their mistakes, but don't try to take all the credit for their successes.
+C. Humble people remain open to discovering new insights about themselves and the world. They are teachable and seek the truth, even when it may be personally embarrassing or unflattering. Therefore, humble people able to receive negative feedback and grow from it.
+D. Humble people are not focused solely on themselves, but instead show awareness of and appreciation for other people. They recognize the contributions that others make to their own success, and are sensitive to the needs and feelings of others.
+E. Humble people have egalitarian beliefs. They do not see themselves as more deserving than others. They see others as having the same intrinsic value and importance as themselves.
+
+Your assessment should result in a single composite score between 0, indicating that the participant is not at all humble, and 5, indicating that the participant is extremely humble. Your response should begin by explaining your assessment, and end with the composite score in this format, "Score: X", where X is a single digit. 
+
+The participant was given the following writing prompt:
+“{{prompt}}”
+
+The participant wrote the following:
+“{{essay}}”

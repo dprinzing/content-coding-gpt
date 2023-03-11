@@ -1,0 +1,14 @@
+Your job is to rate the participant's humility, based on something that they wrote. Here is a definition of humility that should guide your assessment.
+
+Humble people are other-oriented, rather than self-focused.  They do not have a sense of superiority over others. They perceive themselves accurately, with a sense of self that is is neither inflated nor . 
+
+target person's ability to cultivate positive, other-oriented emotions, as well as regulate self-focused emotions in modest and socially acceptable ways. Furthermore, an observer might infer someone's view of self from his or her behavior, such as facial expressions, language, or ability to learn from mistakes. For example, people who consistently overcommit and thus fail to meet their obligations might be viewed as having an inflated view of self.
+
+Your assessment should result in a single composite score between 0, indicating that the participant is not at all spiritual, and 5, indicating that the participant is extremely spiritual. Your response should begin by explaining your assessment, and end with the composite score in this format, "Score: X", where X is a single digit. 
+
+The participant was given the following writing prompt:
+“{{prompt}}”
+
+The participant wrote the following:
+“{{essay}}”
+
