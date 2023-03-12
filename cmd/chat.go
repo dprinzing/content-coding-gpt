@@ -43,8 +43,8 @@ func initChatCmd(root *cobra.Command) {
 	// Random Command
 	randomCmd := &cobra.Command{
 		Use:   "random <essayType>",
-		Short: "Chat complete a random prompt",
-		Long:  "Chat complete a random prompt of the specified type from data/original/essays.csv",
+		Short: "Chat complete a random essay",
+		Long:  "Chat complete a random essay of the specified type from data/original/essays.csv",
 		Args:  cobra.ExactArgs(1),
 		RunE:  chatRandom,
 	}
@@ -57,20 +57,20 @@ func initChatCmd(root *cobra.Command) {
 	randomCmd.Flags().StringP("prompt", "p", "", "Prompt template text file")
 	chatCmd.AddCommand(randomCmd)
 
-	// Essay Command
-	essayCmd := &cobra.Command{
-		Use:   "essay <essayType> <csvFile>",
-		Short: "Chat complete a specific essay type",
-		Long:  "Chat complete a specific essay type from data/original/essays.csv",
+	// Batch Command
+	batchCmd := &cobra.Command{
+		Use:   "batch <essayType> <csvFile>",
+		Short: "Chat complete a batch of essays",
+		Long:  "Chat complete a batch of essays of the specified type from data/original/essays.csv",
 		Args:  cobra.ExactArgs(2),
-		RunE:  chatEssay,
+		RunE:  chatBatch,
 	}
-	essayCmd.Flags().BoolP("reverse", "R", false, "Extract the score from the end of the response?")
-	essayCmd.Flags().IntP("max-tokens", "t", 0, "Maximum number of tokens to generate")
-	essayCmd.Flags().Float32P("temperature", "T", 0.2, "Temperature for sampling")
-	essayCmd.Flags().IntP("batch-size", "b", 10, "Batch size for concurrent requests")
-	essayCmd.Flags().StringP("prompt", "p", "", "Prompt template text file")
-	chatCmd.AddCommand(essayCmd)
+	batchCmd.Flags().BoolP("reverse", "R", false, "Extract the score from the end of the response?")
+	batchCmd.Flags().IntP("max-tokens", "t", 0, "Maximum number of tokens to generate")
+	batchCmd.Flags().Float32P("temperature", "T", 0.2, "Temperature for sampling")
+	batchCmd.Flags().IntP("batch-size", "b", 15, "Batch size for concurrent requests")
+	batchCmd.Flags().StringP("prompt", "p", "", "Prompt template text file")
+	chatCmd.AddCommand(batchCmd)
 }
 
 // chatPrompt processes completions for a specified prompt.
@@ -227,9 +227,9 @@ func chatRandom(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// chatEssay processes completions for all essays of a specified type for
+// chatBatch processes completions for all essays of a specified type for
 // specified model. The output is is placed in the specified CSV file.
-func chatEssay(cmd *cobra.Command, args []string) error {
+func chatBatch(cmd *cobra.Command, args []string) error {
 	startTime := time.Now()
 	ctx := context.Background()
 	reverse, _ := cmd.Flags().GetBool("reverse")

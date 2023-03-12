@@ -24,23 +24,23 @@ func initCompleteCmd(root *cobra.Command) {
 	// Random Command
 	randomCmd := &cobra.Command{
 		Use:   "random <essayType> <modelID>",
-		Short: "Complete a random prompt",
-		Long:  "Complete a random prompt of the specified type from data/original/essays.csv",
+		Short: "Complete a random essay",
+		Long:  "Complete a random essay of the specified type from data/original/essays.csv",
 		RunE:  completeRandom,
 	}
 	randomCmd.Flags().BoolP("raw", "r", false, "Raw OpenAI Response?")
 	randomCmd.Flags().IntP("max-tokens", "t", 6, "Maximum number of tokens to generate")
 	completeCmd.AddCommand(randomCmd)
 
-	// Essay Command
-	essayCmd := &cobra.Command{
-		Use:   "essay <essayType> <modelID> <csvFile>",
-		Short: "Complete a specific essay type",
-		Long:  "Complete a specific essay type from data/original/essays.csv",
-		RunE:  completeEssay,
+	// Batch Command
+	batchCmd := &cobra.Command{
+		Use:   "batch <essayType> <modelID> <csvFile>",
+		Short: "Complete a batch of essays",
+		Long:  "Complete a batch of essays of the specified type from data/original/essays.csv",
+		RunE:  completeBatch,
 	}
-	essayCmd.Flags().IntP("max-tokens", "t", 6, "Maximum number of tokens to generate")
-	completeCmd.AddCommand(essayCmd)
+	batchCmd.Flags().IntP("max-tokens", "t", 6, "Maximum number of tokens to generate")
+	completeCmd.AddCommand(batchCmd)
 }
 
 // completeRandom completes a random prompt.
@@ -119,9 +119,9 @@ func completeRandom(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// completeEssay processes completions for all essays of a specified type for
+// completeBatch processes completions for all essays of a specified type for
 // specified model. The output is is placed in the specified CSV file.
-func completeEssay(cmd *cobra.Command, args []string) error {
+func completeBatch(cmd *cobra.Command, args []string) error {
 	startTime := time.Now()
 	ctx := context.Background()
 	maxTokens, _ := cmd.Flags().GetInt("max-tokens")

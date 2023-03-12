@@ -157,6 +157,23 @@ func (c *ChatResponse) ExtractScore(reverse bool) (float32, error) {
 	return 0, errors.New("chat score: no score found")
 }
 
+// ExtractScores returns a list of floating-point scores found in the first choice.
+// If no scores are found, an error is returned.
+func (c *ChatResponse) ExtractScores() ([]float32, error) {
+	var scores []float32
+	if len(c.Choices) == 0 {
+		return scores, errors.New("chat scores: no choices found")
+	}
+	if len(c.Choices[0].Message.Content) == 0 {
+		return scores, errors.New("chat scores: no content found")
+	}
+	scores = ParseScores(c.Choices[0].Message.Content)
+	if len(scores) == 0 {
+		return scores, errors.New("chat scores: no scores found")
+	}
+	return scores, nil
+}
+
 // ParseScore parses a string as a floating-point number.
 func ParseScore(s string) (float32, error) {
 	// Check if the word starts with a plus/minus sign or numeric digit:
@@ -170,6 +187,17 @@ func ParseScore(s string) (float32, error) {
 	// Parse the number:
 	score, err := strconv.ParseFloat(s, 32)
 	return float32(score), err
+}
+
+// ParseScores parses a string as a list of floating-point numbers.
+func ParseScores(s string) []float32 {
+	var scores []float32
+	for _, field := range strings.Fields(s) {
+		if score, err := ParseScore(field); err == nil {
+			scores = append(scores, score)
+		}
+	}
+	return scores
 }
 
 // MessageChoice represents a choice in a chat completion.
