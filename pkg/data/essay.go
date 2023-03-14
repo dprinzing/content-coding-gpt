@@ -131,7 +131,7 @@ func (r EssayRecord) PlainCompletionRequest(essayType string, model string, maxT
 }
 
 // ChatRequest converts an EssayRecord into an OpenAI ChatRequest.
-func (r EssayRecord) ChatRequest(essayType string, temperature float32, maxTokens int) openai.ChatRequest {
+func (r EssayRecord) ChatRequest(essayType string, model string, temperature float32, maxTokens int) openai.ChatRequest {
 	prompt := Hallmarks[essayType]
 	prompt += "\nA research study participant was given the following writing prompt:\n“"
 	prompt += EssayPrompts[essayType]
@@ -145,7 +145,7 @@ func (r EssayRecord) ChatRequest(essayType string, temperature float32, maxToken
 	prompt += "1.0 indicates that the participant's response is completely consistent with the hallmarks. "
 	prompt += "The composite score should be provided first, followed by reasons for your assessment.\n\n"
 	return openai.ChatRequest{
-		Model: "gpt-3.5-turbo",
+		Model: model,
 		Messages: []openai.Message{
 			SystemMessage,
 			{Role: openai.USER, Content: prompt},
@@ -161,9 +161,9 @@ func (r EssayRecord) ChatRequest(essayType string, temperature float32, maxToken
 // The templates are cached, so it's efficient to use with multiple records.
 //
 // Use the following optional template variables:
-// - {{prompt}}: the essay prompthttps://code.visualstudio.com/docs/languages/r
+// - {{prompt}}: the essay prompt text
 // - {{essay}}: the essay response text
-func (r EssayRecord) ChatRequestTemplate(essayType string, temperature float32, maxTokens int, templateFile string) (openai.ChatRequest, error) {
+func (r EssayRecord) ChatRequestTemplate(essayType string, model string, temperature float32, maxTokens int, templateFile string) (openai.ChatRequest, error) {
 	// Check the cache for the template.
 	template, ok := templateCache[templateFile]
 	if !ok {
@@ -187,7 +187,7 @@ func (r EssayRecord) ChatRequestTemplate(essayType string, temperature float32, 
 
 	// Create the ChatRequest.
 	return openai.ChatRequest{
-		Model: "gpt-3.5-turbo",
+		Model: model,
 		Messages: []openai.Message{
 			SystemMessage,
 			{Role: openai.USER, Content: prompt},

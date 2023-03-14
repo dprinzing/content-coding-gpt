@@ -155,6 +155,19 @@ func (c *Client) ReadModel(ctx context.Context, id string) (Model, error) {
 	return model, nil
 }
 
+// ValidModel returns true if the specified model ID is valid.
+func (c *Client) ValidModel(ctx context.Context, id string) bool {
+	if CommonModels[id] {
+		return true
+	}
+	model, err := c.ReadModel(ctx, id)
+	if err != nil {
+		return false
+	}
+	CommonModels[model.ID] = true
+	return model.ID == id
+}
+
 // UploadFile uploads a jsonl file for use with subsequent fine-tuning requests.
 func (c *Client) UploadFile(ctx context.Context, fileName, purpose string, data []byte) (File, error) {
 	var file File

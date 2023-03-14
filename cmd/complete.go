@@ -135,9 +135,8 @@ func completeBatch(cmd *cobra.Command, args []string) error {
 
 	// Validate the specified model:
 	modelID := args[1]
-	_, err := apiClient.ReadModel(ctx, modelID)
-	if err != nil {
-		return err
+	if !apiClient.ValidModel(ctx, modelID) {
+		return fmt.Errorf("model %s is not a recognized model ID", modelID)
 	}
 
 	// Load the essays:

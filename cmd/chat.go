@@ -38,6 +38,7 @@ func initChatCmd(root *cobra.Command) {
 	promptCmd.Flags().BoolP("system", "s", false, "Include system prompt?")
 	promptCmd.Flags().IntP("max-tokens", "t", 0, "Maximum number of tokens to generate")
 	promptCmd.Flags().Float32P("temperature", "T", 0.2, "Temperature for sampling")
+	promptCmd.Flags().StringP("model", "m", "gpt-3.5-turbo", "Model ID")
 	chatCmd.AddCommand(promptCmd)
 
 	// Random Command
@@ -53,6 +54,7 @@ func initChatCmd(root *cobra.Command) {
 	randomCmd.Flags().BoolP("reverse", "R", false, "Extract the score from the end of the response?")
 	randomCmd.Flags().IntP("max-tokens", "t", 0, "Maximum number of tokens to generate")
 	randomCmd.Flags().Float32P("temperature", "T", 0.2, "Temperature for sampling")
+	randomCmd.Flags().StringP("model", "m", "gpt-3.5-turbo", "Model ID")
 	randomCmd.Flags().IntP("id", "i", 0, "Essay ID (okay, not random :)")
 	randomCmd.Flags().StringP("prompt", "p", "", "Prompt template text file")
 	chatCmd.AddCommand(randomCmd)
@@ -68,6 +70,7 @@ func initChatCmd(root *cobra.Command) {
 	batchCmd.Flags().BoolP("reverse", "R", false, "Extract the score from the end of the response?")
 	batchCmd.Flags().IntP("max-tokens", "t", 0, "Maximum number of tokens to generate")
 	batchCmd.Flags().Float32P("temperature", "T", 0.2, "Temperature for sampling")
+	batchCmd.Flags().StringP("model", "m", "gpt-3.5-turbo", "Model ID")
 	batchCmd.Flags().IntP("batch-size", "b", 15, "Batch size for concurrent requests")
 	batchCmd.Flags().StringP("prompt", "p", "", "Prompt template text file")
 	chatCmd.AddCommand(batchCmd)
@@ -81,7 +84,13 @@ func chatPrompt(cmd *cobra.Command, args []string) error {
 	system, _ := cmd.Flags().GetBool("system")
 	maxTokens, _ := cmd.Flags().GetInt("max-tokens")
 	temperature, _ := cmd.Flags().GetFloat32("temperature")
+	model, _ := cmd.Flags().GetString("model")
 	promptFile := args[0]
+
+	// Validate the model:
+	if !apiClient.ValidModel(ctx, model) {
+		return fmt.Errorf("model %s is not a recognized model ID", model)
+	}
 
 	// Read the prompt file:
 	f, err := os.Open(promptFile)
@@ -102,7 +111,7 @@ func chatPrompt(cmd *cobra.Command, args []string) error {
 	}
 	messages = append(messages, openai.Message{Role: openai.USER, Content: prompt})
 	request := openai.ChatRequest{
-		Model:       "gpt-3.5-turbo",
+		Model:       model,
 		Messages:    messages,
 		Temperature: temperature,
 		MaxTokens:   maxTokens,
@@ -151,11 +160,17 @@ func chatRandom(cmd *cobra.Command, args []string) error {
 	reverse, _ := cmd.Flags().GetBool("reverse")
 	maxTokens, _ := cmd.Flags().GetInt("max-tokens")
 	temperature, _ := cmd.Flags().GetFloat32("temperature")
+	model, _ := cmd.Flags().GetString("model")
 	id, _ := cmd.Flags().GetInt("id")
 	promptFile, _ := cmd.Flags().GetString("prompt")
 	essayType := args[0]
 	if !data.ValidEssayType(essayType) {
 		return fmt.Errorf("essay type %s is not one of: %s", essayType, strings.Join(data.EssayTypes, ", "))
+	}
+
+	// Validate the model:
+	if !apiClient.ValidModel(ctx, model) {
+		return fmt.Errorf("model %s is not a recognized model ID", model)
 	}
 
 	// Select an essay for a chat request:
@@ -173,12 +188,12 @@ func chatRandom(cmd *cobra.Command, args []string) error {
 	// Generate the chat request:
 	var request openai.ChatRequest
 	if promptFile != "" {
-		request, err = essay.ChatRequestTemplate(essayType, temperature, maxTokens, promptFile)
+		request, err = essay.ChatRequestTemplate(essayType, model, temperature, maxTokens, promptFile)
 		if err != nil {
 			return err
 		}
 	} else {
-		request = essay.ChatRequest(essayType, temperature, maxTokens)
+		request = essay.ChatRequest(essayType, model, temperature, maxTokens)
 	}
 
 	// Raw response?
@@ -235,6 +250,7 @@ func chatBatch(cmd *cobra.Command, args []string) error {
 	reverse, _ := cmd.Flags().GetBool("reverse")
 	maxTokens, _ := cmd.Flags().GetInt("max-tokens")
 	temperature, _ := cmd.Flags().GetFloat32("temperature")
+	model, _ := cmd.Flags().GetString("model")
 	batchSize, _ := cmd.Flags().GetInt("batch-size")
 	promptFile, _ := cmd.Flags().GetString("prompt")
 	csvFile := args[1]
@@ -243,6 +259,11 @@ func chatBatch(cmd *cobra.Command, args []string) error {
 	essayType := args[0]
 	if !data.ValidEssayType(essayType) {
 		return fmt.Errorf("essay type %s is not one of: %s", essayType, strings.Join(data.EssayTypes, ", "))
+	}
+
+	// Validate the model:
+	if !apiClient.ValidModel(ctx, model) {
+		return fmt.Errorf("model %s is not a recognized model ID", model)
 	}
 
 	// Load the essays:
@@ -262,12 +283,12 @@ func chatBatch(cmd *cobra.Command, args []string) error {
 		for _, essay := range batch {
 			var request openai.ChatRequest
 			if promptFile != "" {
-				request, err = essay.ChatRequestTemplate(essayType, temperature, maxTokens, promptFile)
+				request, err = essay.ChatRequestTemplate(essayType, model, temperature, maxTokens, promptFile)
 				if err != nil {
 					return err // error reading the template file
 				}
 			} else {
-				request = essay.ChatRequest(essayType, temperature, maxTokens)
+				request = essay.ChatRequest(essayType, model, temperature, maxTokens)
 			}
 			chat := openai.Chat{
 				ID:      strconv.Itoa(essay.ID),

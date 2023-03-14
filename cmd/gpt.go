@@ -18,8 +18,8 @@ func main() {
 	// Root Command
 	rootCmd := &cobra.Command{
 		Use:     "gpt",
-		Short:   "gpt is a command line tool for content coding with GPT-3",
-		Long:    "gpt is a command line tool for content coding with GPT-3",
+		Short:   "gpt: OpenAI GPT content coding",
+		Long:    "gpt is a command line tool for content coding with OpenAI GPT models",
 		Version: "0.0.1",
 	}
 

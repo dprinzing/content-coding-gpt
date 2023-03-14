@@ -1,5 +1,15 @@
 package openai
 
+// CommonModels is a collection of commonly-used OpenAI models.
+var CommonModels = map[string]bool{
+	"ada":              true,
+	"babbage":          true,
+	"curie":            true,
+	"davinci":          true,
+	"text-davinci-003": true,
+	"gpt-3.5-turbo":    true,
+}
+
 // Model identifies an OpenAPI model.
 type Model struct {
 	// ID is the model ID, e.g. "text-davinci-003".

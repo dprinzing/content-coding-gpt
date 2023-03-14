@@ -224,12 +224,9 @@ func createTune(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// Validate the base model if it's not one of main models.
-	if base != "ada" && base != "babbage" && base != "curie" && base != "davinci" {
-		_, e := apiClient.ReadModel(ctx, base)
-		if e != nil {
-			return fmt.Errorf("invalid base model %s: %w", base, e)
-		}
+	// Validate the base model.
+	if !apiClient.ValidModel(ctx, base) {
+		return fmt.Errorf("invalid base model: %s", base)
 	}
 
 	// Validate the training file ID.
