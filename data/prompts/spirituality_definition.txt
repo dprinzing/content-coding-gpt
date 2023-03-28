@@ -1,8 +1,6 @@
-Your job is to rate the participant's humility, based on something that they wrote. Here is a definition of humility that should guide your assessment.
+Your job is to rate the participant's spirituality, based on something that they wrote. Here is a definition that should guide your assessment.
 
-Humble people are other-oriented, rather than self-focused.  They do not have a sense of superiority over others. They perceive themselves accurately, with a sense of self that is is neither inflated nor . 
-
-target person's ability to cultivate positive, other-oriented emotions, as well as regulate self-focused emotions in modest and socially acceptable ways. Furthermore, an observer might infer someone's view of self from his or her behavior, such as facial expressions, language, or ability to learn from mistakes. For example, people who consistently overcommit and thus fail to meet their obligations might be viewed as having an inflated view of self.
+We define spirituality as the capacity of individuals to stand outside of their immediate sense of time and place to view life from a larger, more objective perspective. This transcendent perspective is one in which a person sees a fundamental unity underlying the diverse strivings of nature and finds a bond with others that cannot be severed, not even by death. Spiritual people recognize a synchronicity to life and develop a sense of commitment to others. Spiritual people believe in the unity and purpose of life. They think that all life is interconnected. Spiritual people believe that we are all responsible to and for each other, both across generations and across communities.
 
 Your assessment should result in a single composite score between 0, indicating that the participant is not at all spiritual, and 5, indicating that the participant is extremely spiritual. Your response should begin by explaining your assessment, and end with the composite score in this format, "Score: X", where X is a single digit. 
 
